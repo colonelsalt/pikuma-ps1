@@ -4,11 +4,18 @@
 .org 0x80010000
 
 Main:
-	li t0, 5
+	li a0, 6
+	jal Factorial
+	nop
+LoopForever:
+	j LoopForever
+	nop
+
+Factorial:
 	li t3, 1
 	li t4, 1
 	li t1, 1
-	bgt t1, t0, End
+	bgt t1, a0, EndFac
 	nop
 
 OuterLoop:
@@ -26,10 +33,10 @@ InnerLoop:
 OuterLoop2:
 	move t3, t4
 	addi t1, 1
-	ble t1, t0, OuterLoop
+	ble t1, a0, OuterLoop
 	nop
-
-End:
+EndFac:
 	move v0, t4
+	jr ra
 
 .close
