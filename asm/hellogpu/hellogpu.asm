@@ -44,8 +44,57 @@ Main:
 	sw t1, GP0(t0)
 	li t1, 0x00000000 ; top left corner (0, 0)
 	sw t1, GP0(t0)
-	li t1, 0x0EF0013F ; width/height (320x240)
+	li t1, 0x00EF013F ; width/height (320x240)
 	sw t1, GP0(t0)
+
+	; Draw triangle
+	li t1, 0x200080DB ; draw flat-shaded triangle, colour=(219R, 128G, 0B)
+	sw t1, GP0(t0)
+	
+	li t1, 0x00EF0000 ; vertex1 = (0, 239)
+	sw t1, GP0(t0)
+	
+	li t1, 0x000000A0 ; vertex2 = (160, 0)
+	sw t1, GP0(t0)
+	
+	li t1, 0x00EF013F ; vertex3 = (319, 239)
+	sw t1, GP0(t0)	
+	
+	; Draw quad
+	li t1, 0x2800A000 ; draw flat-shaded quad, colour=(0R, 160G, 0B)
+	sw t1, GP0(t0)	
+	
+	li t1, 0x00B40050 ; v1 = (80, 180)
+	sw t1, GP0(t0)	
+	
+	li t1, 0x003C0050 ; v4 = (80, 60)
+	sw t1, GP0(t0)	
+	
+	li t1, 0x00B400F0 ; v2 = (240, 180)
+	sw t1, GP0(t0)	
+	
+	li t1, 0x003C00F0 ; v3 = (240, 60)
+	sw t1, GP0(t0)	
+	
+	; Draw Gourad-shaded triangle
+	li t1, 0x30FF0000 ; shaded triangle, c1 = blue
+	sw t1, GP0(t0)	
+	
+	li t1, 0x003C0050 ; v1 = (80, 60)
+	sw t1, GP0(t0)	
+	
+	li t1, 0x0000FF00 ; c2 = green
+	sw t1, GP0(t0)
+	
+	li t1, 0x00B400A0 ; v2 = (160, 180)
+	sw t1, GP0(t0)	
+	
+	li t1, 0x000000FF ; c3 = red
+	sw t1, GP0(t0)	
+	
+	li t1, 0x003C00F0 ; v3 = (240, 60)
+	sw t1, GP0(t0)
+	
 
 LoopForver:
 	j LoopForver
