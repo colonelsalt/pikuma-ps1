@@ -1,2 +1,12 @@
 *.bin
 *.ps-exe
+PSX.Dev-README.md
+*.elf
+*.map
+*.cpe
+*.ps-exe
+*.dep
+*.o
+*.a
+third_party/
+.vscode/
