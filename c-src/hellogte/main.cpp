@@ -11,7 +11,7 @@ constexpr u32 SCREEN_CENTRE_X = SCREEN_RES_X >> 1;
 constexpr u32 SCREEN_CENTRE_Y = SCREEN_RES_Y >> 1;
 constexpr u32 SCREEN_Z = 400;
 
-constexpr u32 OT_LENGTH = 256;
+constexpr u32 OT_LENGTH = 2'048;
 constexpr u32 PRIMBUFF_LENGTH = 2'048;
 
 struct double_buffer
@@ -62,6 +62,10 @@ VECTOR g_Translation = { 0, 0, 900 };
 VECTOR g_Scale = { ONE, ONE, ONE };
 
 static MATRIX s_WorldMatrix;
+
+VECTOR g_Velocity = { 0, 0, 0 };
+VECTOR g_Acceleration = { 0, 0, 0 };
+VECTOR g_Position = { 0, 0, 0 };
 
 void ScreenInit()
 {
@@ -116,6 +120,12 @@ void Setup()
 	ScreenInit();
 
 	g_NextPrim = g_PrimBuff[g_CurrentBuffer];
+
+	g_Acceleration.vy = 1;
+
+	g_Position.vy = -400;
+	g_Position.vz = 1'800;
+
 }
 
 void Update()
@@ -123,8 +133,21 @@ void Update()
 	// Clear ordering table
 	ClearOTagR(g_OrderingTable[g_CurrentBuffer], OT_LENGTH);
 
+	g_Velocity.vx += g_Acceleration.vx;
+	g_Velocity.vy += g_Acceleration.vy;
+	g_Velocity.vz += g_Acceleration.vz;
+
+	g_Position.vx += g_Velocity.vx >> 1;
+	g_Position.vy += g_Velocity.vy >> 1;
+	g_Position.vz += g_Velocity.vz >> 1;
+
+	if (g_Position.vy > 400)
+	{
+		g_Velocity.vy *= -1;
+	}
+
 	RotMatrix(&g_Rotation, &s_WorldMatrix); // populate matrix with rotation values
-	TransMatrix(&s_WorldMatrix, &g_Translation); // populate matrix with translation values
+	TransMatrix(&s_WorldMatrix, &g_Position); // populate matrix with translation values
 	ScaleMatrix(&s_WorldMatrix, &g_Scale); // populate matrix with scale values
 
 	SetRotMatrix(&s_WorldMatrix); // sets rot/scale matrix to be used by the GTE (for upcoming RotTransPers call)
