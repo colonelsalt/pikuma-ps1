@@ -144,15 +144,18 @@ void Update()
 		setRGB1(g_Triangle, 255, 255,   0);
 		setRGB2(g_Triangle,   0, 255, 255);
 
-		s32 P, Flag;
-		s32 OrderingTableZ = 0;
-		OrderingTableZ += RotTransPers(&g_CubeVertices[g_CubeFaces[i]], (s32*)&g_Triangle->x0, &P, &Flag); // apply matrix to vertex 0
-		OrderingTableZ += RotTransPers(&g_CubeVertices[g_CubeFaces[i + 1]], (s32*)&g_Triangle->x1, &P, &Flag);
-		OrderingTableZ += RotTransPers(&g_CubeVertices[g_CubeFaces[i + 2]], (s32*)&g_Triangle->x2, &P, &Flag);
-		OrderingTableZ /= 3;
+		s32 OrderingTableZ, P, Flag;
 
-		// if we've gotten a sensible Z value that fits in our ordering table
-		if (OrderingTableZ > 0 && OrderingTableZ < OT_LENGTH)
+		s32 NormalClip = RotAverageNclip3(&g_CubeVertices[g_CubeFaces[i]],
+										  &g_CubeVertices[g_CubeFaces[i + 1]],
+										  &g_CubeVertices[g_CubeFaces[i + 2]],
+										  (s32*)&g_Triangle->x0,
+										  (s32*)&g_Triangle->x1,
+										  (s32*)&g_Triangle->x2,
+										  &P, &OrderingTableZ, &Flag);
+
+		// if we've gotten a sensible Z value, and the normal isn't facing away from us
+		if (NormalClip > 0 && OrderingTableZ > 0 && OrderingTableZ < OT_LENGTH)
 		{
 			addPrim(g_OrderingTable[g_CurrentBuffer][OrderingTableZ], g_Triangle);
 			g_NextPrim += sizeof(POLY_G3);
