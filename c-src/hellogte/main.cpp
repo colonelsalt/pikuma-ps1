@@ -37,21 +37,15 @@ constexpr u32 NUM_VERTICES = ArrayCount(g_CubeVertices);
 
 u16 g_CubeFaces[] =
 {
-	0, 3, 2, // top
-	0, 2, 1, // top
-	4, 0, 1, // front
-	4, 1, 5, // front
-	7, 4, 5, // bottom
-	7, 5, 6, // bottom
-	5, 1, 2, // right
-	5, 2, 6, // right
-	2, 3, 7, // back
-	2, 7, 6, // back
-	0, 4, 7, // left
-	0, 7, 3  // left
+	3, 2, 0, 1,  // top
+	0, 1, 4, 5,  // front
+	4, 5, 7, 6,  // bottom
+	1, 2, 5, 6,  // right
+	2, 3, 6, 7,  // back
+	3, 0, 7, 4,  // left
 };
 
-constexpr u32 NUM_FACES = ArrayCount(g_CubeFaces) / 3;
+constexpr u32 NUM_FACES = ArrayCount(g_CubeFaces) / 4;
 
 double_buffer g_Screen;
 u16 g_CurrentBuffer; // 0 or 1 depending on which of the two draw buffers is in front
@@ -61,7 +55,7 @@ u32 g_OrderingTable[2][OT_LENGTH];
 u8 g_PrimBuff[2][PRIMBUFF_LENGTH];
 u8* g_NextPrim;
 
-POLY_G3* g_Triangle;
+POLY_G4* g_Quad;
 
 SVECTOR g_Rotation = { 0, 0, 0 };
 VECTOR g_Translation = { 0, 0, 900 };
@@ -136,29 +130,32 @@ void Update()
 	SetRotMatrix(&s_WorldMatrix); // sets rot/scale matrix to be used by the GTE (for upcoming RotTransPers call)
 	SetTransMatrix(&s_WorldMatrix); // sets translation matrix to be used by GTE
 
-	for (u32 i = 0; i < NUM_FACES * 3; i += 3)
+	for (u32 i = 0; i < NUM_FACES * 4; i += 4)
 	{
-		g_Triangle = (POLY_G3*)g_NextPrim;
-		setPolyG3(g_Triangle);
-		setRGB0(g_Triangle, 255,   0, 255);
-		setRGB1(g_Triangle, 255, 255,   0);
-		setRGB2(g_Triangle,   0, 255, 255);
+		g_Quad = (POLY_G4*)g_NextPrim;
+		setPolyG4(g_Quad);
+		setRGB0(g_Quad, 255,   0, 255);
+		setRGB1(g_Quad, 255, 255,   0);
+		setRGB2(g_Quad,   0, 255, 255);
+		setRGB3(g_Quad,   0, 255,   0);
 
 		s32 OrderingTableZ, P, Flag;
 
-		s32 NormalClip = RotAverageNclip3(&g_CubeVertices[g_CubeFaces[i]],
+		s32 NormalClip = RotAverageNclip4(&g_CubeVertices[g_CubeFaces[i]],
 										  &g_CubeVertices[g_CubeFaces[i + 1]],
 										  &g_CubeVertices[g_CubeFaces[i + 2]],
-										  (s32*)&g_Triangle->x0,
-										  (s32*)&g_Triangle->x1,
-										  (s32*)&g_Triangle->x2,
+										  &g_CubeVertices[g_CubeFaces[i + 3]],
+										  (s32*)&g_Quad->x0,
+										  (s32*)&g_Quad->x1,
+										  (s32*)&g_Quad->x2,
+										  (s32*)&g_Quad->x3,
 										  &P, &OrderingTableZ, &Flag);
 
 		// if we've gotten a sensible Z value, and the normal isn't facing away from us
 		if (NormalClip > 0 && OrderingTableZ > 0 && OrderingTableZ < OT_LENGTH)
 		{
-			addPrim(g_OrderingTable[g_CurrentBuffer][OrderingTableZ], g_Triangle);
-			g_NextPrim += sizeof(POLY_G3);
+			addPrim(g_OrderingTable[g_CurrentBuffer][OrderingTableZ], g_Quad);
+			g_NextPrim += sizeof(POLY_G4);
 		}
 	}
 
