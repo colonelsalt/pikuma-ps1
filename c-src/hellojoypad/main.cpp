@@ -4,6 +4,7 @@
 #include "inline_n.h"
 
 #include "util.h"
+#include "joypad.h"
 
 constexpr u32 VIDEO_MODE = 0;
 constexpr u32 SCREEN_RES_X = 320;
@@ -73,8 +74,6 @@ u8* g_NextPrim;
 POLY_G4* g_Quad;
 POLY_F3* g_Triangle;
 
-u32 g_PadState;
-
 SVECTOR g_CubeRotation = { 0, 0, 0 };
 SVECTOR g_FloorRotation = { 0, 0, 0 };
 VECTOR g_Scale = { ONE, ONE, ONE };
@@ -140,7 +139,7 @@ void Setup()
 {
 	ScreenInit();
 
-	PadInit(0);
+	JoypadInit();
 
 	g_NextPrim = g_PrimBuff[g_CurrentBuffer];
 
@@ -160,8 +159,16 @@ void Update()
 	// Clear ordering table
 	ClearOTagR(g_OrderingTable[g_CurrentBuffer], OT_LENGTH);
 
-	u32 NewPadState = PadRead(0);
-	g_PadState = NewPadState & (NewPadState ^ g_PadState);
+	JoypadUpdate();
+
+	if (JoypadCheck(PAD1_LEFT))
+	{
+		g_CubeRotation.vy += 20;
+	}
+	if (JoypadCheck(PAD1_RIGHT))
+	{
+		g_CubeRotation.vy -= 20;
+	}
 
 	g_Velocity.vx += g_Acceleration.vx;
 	g_Velocity.vy += g_Acceleration.vy;
@@ -170,15 +177,6 @@ void Update()
 	g_CubePosition.vx += g_Velocity.vx >> 1;
 	g_CubePosition.vy += g_Velocity.vy >> 1;
 	g_CubePosition.vz += g_Velocity.vz >> 1;
-
-	if (g_PadState & _PAD(0, PADLleft))
-	{
-		g_CubeRotation.vy += 20;
-	}
-	if (g_PadState & _PAD(0, PADLright))
-	{
-		g_CubeRotation.vy -= 20;
-	}
 
 	if (g_CubePosition.vy > 400)
 	{
