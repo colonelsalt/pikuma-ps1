@@ -1,6 +1,6 @@
-#include <libetc.h>
 #include <libgpu.h>
 #include <libgte.h>
+#include "inline_n.h"
 
 #include "util.h"
 
@@ -47,6 +47,20 @@ u16 g_CubeFaces[] =
 
 constexpr u32 NUM_FACES = ArrayCount(g_CubeFaces) / 4;
 
+SVECTOR g_FloorVertices[] =
+{
+	{ -300, -300,   0 },
+	{  300,  300,   0 },
+	{ -300,  300,   0 },
+	{  300, -300,   0 }
+};
+
+u16 g_FloorFaces[] =
+{
+	0, 1, 2,
+	0, 3, 1
+};
+
 double_buffer g_Screen;
 u16 g_CurrentBuffer; // 0 or 1 depending on which of the two draw buffers is in front
 
@@ -56,16 +70,20 @@ u8 g_PrimBuff[2][PRIMBUFF_LENGTH];
 u8* g_NextPrim;
 
 POLY_G4* g_Quad;
+POLY_F3* g_Triangle;
 
-SVECTOR g_Rotation = { 0, 0, 0 };
-VECTOR g_Translation = { 0, 0, 900 };
+SVECTOR g_CubeRotation = { 0, 0, 0 };
+SVECTOR g_FloorRotation = { 0, 0, 0 };
 VECTOR g_Scale = { ONE, ONE, ONE };
 
 static MATRIX s_WorldMatrix;
 
 VECTOR g_Velocity = { 0, 0, 0 };
 VECTOR g_Acceleration = { 0, 0, 0 };
-VECTOR g_Position = { 0, 0, 0 };
+VECTOR g_CubePosition = { 0, 0, 0 };
+
+
+VECTOR g_FloorPosition = { 0, 0, 0 };
 
 void ScreenInit()
 {
@@ -123,9 +141,13 @@ void Setup()
 
 	g_Acceleration.vy = 1;
 
-	g_Position.vy = -400;
-	g_Position.vz = 1'800;
+	g_CubePosition.vy = -400;
+	g_CubePosition.vz = 1'800;
 
+	g_FloorPosition.vy = 520;
+	g_FloorPosition.vz = 2'000;
+
+	g_FloorRotation.vx = -(1 << 12) / 4;
 }
 
 void Update()
@@ -137,17 +159,17 @@ void Update()
 	g_Velocity.vy += g_Acceleration.vy;
 	g_Velocity.vz += g_Acceleration.vz;
 
-	g_Position.vx += g_Velocity.vx >> 1;
-	g_Position.vy += g_Velocity.vy >> 1;
-	g_Position.vz += g_Velocity.vz >> 1;
+	g_CubePosition.vx += g_Velocity.vx >> 1;
+	g_CubePosition.vy += g_Velocity.vy >> 1;
+	g_CubePosition.vz += g_Velocity.vz >> 1;
 
-	if (g_Position.vy > 400)
+	if (g_CubePosition.vy > 400)
 	{
 		g_Velocity.vy *= -1;
 	}
 
-	RotMatrix(&g_Rotation, &s_WorldMatrix); // populate matrix with rotation values
-	TransMatrix(&s_WorldMatrix, &g_Position); // populate matrix with translation values
+	RotMatrix(&g_CubeRotation, &s_WorldMatrix); // populate matrix with rotation values
+	TransMatrix(&s_WorldMatrix, &g_CubePosition); // populate matrix with translation values
 	ScaleMatrix(&s_WorldMatrix, &g_Scale); // populate matrix with scale values
 
 	SetRotMatrix(&s_WorldMatrix); // sets rot/scale matrix to be used by the GTE (for upcoming RotTransPers call)
@@ -182,9 +204,41 @@ void Update()
 		}
 	}
 
-	g_Rotation.vx += 6;
-	g_Rotation.vy += 8;
-	g_Rotation.vz += 12;
+	RotMatrix(&g_FloorRotation, &s_WorldMatrix);
+	TransMatrix(&s_WorldMatrix, &g_FloorPosition);
+
+	SetRotMatrix(&s_WorldMatrix);
+	SetTransMatrix(&s_WorldMatrix);
+
+	for (u32 i = 0; i < ArrayCount(g_FloorFaces); i += 3)
+	{
+		g_Triangle = (POLY_F3*)g_NextPrim;
+		setPolyF3(g_Triangle);
+		setRGB0(g_Triangle, 58, 53, 47); // grey
+
+		s32 OrderingTableZ, P, Flag;
+
+		s32 NormalClip = RotAverageNclip3(&g_FloorVertices[g_FloorFaces[i]],
+										  &g_FloorVertices[g_FloorFaces[i + 1]],
+										  &g_FloorVertices[g_FloorFaces[i + 2]],
+										  (s32*)&g_Triangle->x0,
+										  (s32*)&g_Triangle->x1,
+										  (s32*)&g_Triangle->x2,
+										  &P, &OrderingTableZ, &Flag);
+
+		if (NormalClip > 0 && OrderingTableZ > 0 && OrderingTableZ < OT_LENGTH)
+		{
+			addPrim(g_OrderingTable[g_CurrentBuffer][OrderingTableZ], g_Triangle);
+			g_NextPrim += sizeof(POLY_F3);
+		}
+
+	}
+
+	g_CubeRotation.vx += 6;
+	g_CubeRotation.vy += 8;
+	g_CubeRotation.vz += 12;
+
+	//g_FloorRotation.vx += 1; //(1 << 12) / 4
 }
 
 void Render()
