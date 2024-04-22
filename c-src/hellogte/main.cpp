@@ -1,3 +1,4 @@
+#include <libetc.h>
 #include <libgpu.h>
 #include <libgte.h>
 #include "inline_n.h"
@@ -184,19 +185,41 @@ void Update()
 		setRGB2(g_Quad,   0, 255, 255);
 		setRGB3(g_Quad,   0, 255,   0);
 
-		s32 OrderingTableZ, P, Flag;
+		s32 OrderingTableZ, P, Flag, NormalClip;
 
-		s32 NormalClip = RotAverageNclip4(&g_CubeVertices[g_CubeFaces[i]],
-										  &g_CubeVertices[g_CubeFaces[i + 1]],
-										  &g_CubeVertices[g_CubeFaces[i + 2]],
-										  &g_CubeVertices[g_CubeFaces[i + 3]],
-										  (s32*)&g_Quad->x0,
-										  (s32*)&g_Quad->x1,
-										  (s32*)&g_Quad->x2,
-										  (s32*)&g_Quad->x3,
-										  &P, &OrderingTableZ, &Flag);
+		// load first 3 verts (GTE can only compute max. 3 vectors at a time)
+		gte_ldv0(&g_CubeVertices[g_CubeFaces[i]]);
+		gte_ldv1(&g_CubeVertices[g_CubeFaces[i + 1]]);
+		gte_ldv2(&g_CubeVertices[g_CubeFaces[i + 2]]);
 
-		// if we've gotten a sensible Z value, and the normal isn't facing away from us
+		// transform/project first 3 verts
+		gte_rtpt();
+
+		gte_nclip();
+		gte_stopz(&NormalClip);
+
+		if (NormalClip <= 0)
+		{
+			// Don't bother if the normal is facing away from us
+			continue;
+		}
+
+		// Grab the transformed version of vert 0
+		gte_stsxy0(&g_Quad->x0);
+
+		// load the last vertex into the GTE
+		gte_ldv0(&g_CubeVertices[g_CubeFaces[i + 3]]);
+
+		// transform/project the last vertex
+		gte_rtps();
+
+		// grab transformed versions of vertices 1-3
+		gte_stsxy3(&g_Quad->x1, &g_Quad->x2, &g_Quad->x3);
+
+		gte_avsz4();
+		gte_stotz(&OrderingTableZ);
+
+		// if we've gotten a sensible Z value
 		if (NormalClip > 0 && OrderingTableZ > 0 && OrderingTableZ < OT_LENGTH)
 		{
 			addPrim(g_OrderingTable[g_CurrentBuffer][OrderingTableZ], g_Quad);
@@ -212,24 +235,33 @@ void Update()
 
 	for (u32 i = 0; i < ArrayCount(g_FloorFaces); i += 3)
 	{
+		s32 OrderingTableZ, NormalClip;
+
 		g_Triangle = (POLY_F3*)g_NextPrim;
 		setPolyF3(g_Triangle);
 		setRGB0(g_Triangle, 58, 53, 47); // grey
 
-		s32 OrderingTableZ, P, Flag;
+		gte_ldv0(&g_FloorVertices[g_FloorFaces[i]]);
+		gte_ldv1(&g_FloorVertices[g_FloorFaces[i + 1]]);
+		gte_ldv2(&g_FloorVertices[g_FloorFaces[i + 2]]);
 
-		s32 NormalClip = RotAverageNclip3(&g_FloorVertices[g_FloorFaces[i]],
-										  &g_FloorVertices[g_FloorFaces[i + 1]],
-										  &g_FloorVertices[g_FloorFaces[i + 2]],
-										  (s32*)&g_Triangle->x0,
-										  (s32*)&g_Triangle->x1,
-										  (s32*)&g_Triangle->x2,
-										  &P, &OrderingTableZ, &Flag);
+		gte_rtpt();
 
-		if (NormalClip > 0 && OrderingTableZ > 0 && OrderingTableZ < OT_LENGTH)
+		gte_nclip();
+		gte_stopz(&NormalClip);
+
+		if (NormalClip > 0)
 		{
-			addPrim(g_OrderingTable[g_CurrentBuffer][OrderingTableZ], g_Triangle);
-			g_NextPrim += sizeof(POLY_F3);
+			gte_stsxy3(&g_Triangle->x0, &g_Triangle->x1, &g_Triangle->x2);
+			gte_avsz3();
+			gte_stotz(&OrderingTableZ);
+
+			if (OrderingTableZ > 0 && OrderingTableZ < OT_LENGTH)
+			{
+				addPrim(g_OrderingTable[g_CurrentBuffer][OrderingTableZ], g_Triangle);
+				g_NextPrim += sizeof(POLY_F3);
+			}
+
 		}
 
 	}
