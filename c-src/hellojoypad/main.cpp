@@ -5,23 +5,8 @@
 
 #include "util.h"
 #include "joypad.h"
-
-constexpr u32 VIDEO_MODE = 0;
-constexpr u32 SCREEN_RES_X = 320;
-constexpr u32 SCREEN_RES_Y = 240;
-constexpr u32 SCREEN_CENTRE_X = SCREEN_RES_X >> 1;
-constexpr u32 SCREEN_CENTRE_Y = SCREEN_RES_Y >> 1;
-constexpr u32 SCREEN_Z = 400;
-
-constexpr u32 OT_LENGTH = 2'048;
-constexpr u32 PRIMBUFF_LENGTH = 2'048;
-
-struct double_buffer
-{
-	// One man's draw buffer is another man's display buffer
-	DRAWENV Draw[2];
-	DISPENV Disp[2];
-};
+#include "globals.h"
+#include "display.h"
 
 SVECTOR g_CubeVertices[] =
 {
@@ -63,14 +48,6 @@ u16 g_FloorFaces[] =
 	0, 3, 1
 };
 
-double_buffer g_Screen;
-u16 g_CurrentBuffer; // 0 or 1 depending on which of the two draw buffers is in front
-
-u32 g_OrderingTable[2][OT_LENGTH];
-
-u8 g_PrimBuff[2][PRIMBUFF_LENGTH];
-u8* g_NextPrim;
-
 POLY_G4* g_Quad;
 POLY_F3* g_Triangle;
 
@@ -84,56 +61,7 @@ VECTOR g_Velocity = { 0, 0, 0 };
 VECTOR g_Acceleration = { 0, 0, 0 };
 VECTOR g_CubePosition = { 0, 0, 0 };
 
-
 VECTOR g_FloorPosition = { 0, 0, 0 };
-
-void ScreenInit()
-{
-	// Reset GPU
-	ResetGraph(0);
-
-	// Set display area of first buffer
-	SetDefDispEnv(&g_Screen.Disp[0], 0,            0, SCREEN_RES_X, SCREEN_RES_Y);
-	SetDefDrawEnv(&g_Screen.Draw[0], 0, SCREEN_RES_Y, SCREEN_RES_X, SCREEN_RES_Y);
-
-	SetDefDispEnv(&g_Screen.Disp[1], 0, SCREEN_RES_Y, SCREEN_RES_X, SCREEN_RES_Y);
-	SetDefDrawEnv(&g_Screen.Draw[1], 0,            0, SCREEN_RES_X, SCREEN_RES_Y);
-
-	// Assign each drawing buffer
-	g_Screen.Draw[0].isbg = true;
-	g_Screen.Draw[1].isbg = true;
-
-	setRGB0(&g_Screen.Draw[0], 15, 13, 106);
-	setRGB0(&g_Screen.Draw[1], 15, 13, 106);
-
-	// Set initial draw+display buffer
-	g_CurrentBuffer = 0;
-	PutDispEnv(g_Screen.Disp + g_CurrentBuffer);
-	PutDrawEnv(g_Screen.Draw + g_CurrentBuffer);
-
-	// Initialise GTE
-	InitGeom();
-	SetGeomOffset(SCREEN_CENTRE_X, SCREEN_CENTRE_Y);
-	SetGeomScreen(SCREEN_Z);
-
-	// Enable display
-	SetDispMask(1);
-}
-
-void DisplayFrame()
-{
-	DrawSync(0);
-	VSync(0);
-
-	PutDispEnv(g_Screen.Disp + g_CurrentBuffer);
-	PutDrawEnv(g_Screen.Draw + g_CurrentBuffer);
-
-	// Draw all primitives in ordering table..?!
-	DrawOTag(g_OrderingTable[g_CurrentBuffer] + OT_LENGTH - 1);
-
-	g_CurrentBuffer = !g_CurrentBuffer;
-	g_NextPrim = g_PrimBuff[g_CurrentBuffer];
-}
 
 void Setup()
 {
@@ -141,7 +69,7 @@ void Setup()
 
 	JoypadInit();
 
-	g_NextPrim = g_PrimBuff[g_CurrentBuffer];
+	ResetNextPrim(GetCurrBuff());
 
 	g_Acceleration.vy = 1;
 
@@ -157,7 +85,7 @@ void Setup()
 void Update()
 {
 	// Clear ordering table
-	ClearOTagR(g_OrderingTable[g_CurrentBuffer], OT_LENGTH);
+	EmptyOt(GetCurrBuff());
 
 	JoypadUpdate();
 
@@ -192,7 +120,7 @@ void Update()
 
 	for (u32 i = 0; i < NUM_FACES * 4; i += 4)
 	{
-		g_Quad = (POLY_G4*)g_NextPrim;
+		g_Quad = (POLY_G4*)GetNextPrim();
 		setPolyG4(g_Quad);
 		setRGB0(g_Quad, 255,   0, 255);
 		setRGB1(g_Quad, 255, 255,   0);
@@ -234,10 +162,10 @@ void Update()
 		gte_stotz(&OrderingTableZ);
 
 		// if we've gotten a sensible Z value
-		if (NormalClip > 0 && OrderingTableZ > 0 && OrderingTableZ < OT_LENGTH)
+		if (OrderingTableZ > 0 && OrderingTableZ < OT_LENGTH)
 		{
-			addPrim(g_OrderingTable[g_CurrentBuffer][OrderingTableZ], g_Quad);
-			g_NextPrim += sizeof(POLY_G4);
+			addPrim(GetOtAt(GetCurrBuff(), OrderingTableZ), g_Quad);
+			IncrementNextPrimitive(sizeof(POLY_G4));
 		}
 	}
 
@@ -251,7 +179,7 @@ void Update()
 	{
 		s32 OrderingTableZ, NormalClip;
 
-		g_Triangle = (POLY_F3*)g_NextPrim;
+		g_Triangle = (POLY_F3*)GetNextPrim();
 		setPolyF3(g_Triangle);
 		setRGB0(g_Triangle, 58, 53, 47); // grey
 
@@ -272,8 +200,8 @@ void Update()
 
 			if (OrderingTableZ > 0 && OrderingTableZ < OT_LENGTH)
 			{
-				addPrim(g_OrderingTable[g_CurrentBuffer][OrderingTableZ], g_Triangle);
-				g_NextPrim += sizeof(POLY_F3);
+				addPrim(GetOtAt(GetCurrBuff(), OrderingTableZ), g_Triangle);
+				IncrementNextPrimitive(sizeof(POLY_F3));
 			}
 
 		}
