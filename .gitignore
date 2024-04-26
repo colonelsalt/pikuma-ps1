@@ -8,5 +8,7 @@ PSX.Dev-README.md
 *.dep
 *.o
 *.a
+*.ISO
+*.CUE
 third_party/
 .vscode/
