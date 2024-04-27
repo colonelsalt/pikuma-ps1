@@ -8,7 +8,8 @@ joypad.cpp \
 globals.cpp \
 display.cpp \
 camera.cpp \
-util.cpp
+util.cpp \
+object.cpp
 
 CPPFLAGS += -Ithird_party/psyq-iwyu/include -Wno-write-strings
 LDFLAGS += -Lthird_party/psyq/lib

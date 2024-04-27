@@ -22,4 +22,13 @@ typedef uint64_t u64;
 #define Assert(X) {if (!(X)) *(int*)0 = 42;}
 #endif
 
+enum byte_order
+{
+	ByteOrder_LittleEndian,
+	ByteOrder_BigEndian
+};
+
 u8* FileRead(char* FileName, u32* OutLength);
+
+u16 GetU16(u8* ByteBuffer, u32* OutByteIndex, byte_order ByteOrder);
+u32 GetU32(u8* ByteBuffer, u32* OutByteIndex, byte_order ByteOrder);

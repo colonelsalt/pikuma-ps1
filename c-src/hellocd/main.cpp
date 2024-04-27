@@ -11,48 +11,18 @@
 #include "globals.h"
 #include "display.h"
 #include "camera.h"
+#include "object.h"
 
 extern char __heap_start, __sp;
 
-SVECTOR g_CubeVertices[] =
-{
-	{ -128, -128, -128 },
-	{  128, -128, -128 },
-	{  128, -128,  128 },
-	{ -128, -128,  128 },
-	{ -128,  128, -128 },
-	{  128,  128, -128 },
-	{  128,  128,  128 },
-	{ -128,  128,  128 }
-};
+object g_Object;
 
-constexpr u32 NUM_VERTICES = ArrayCount(g_CubeVertices);
-
-u16 g_CubeFaces[] =
-{
-	3, 2, 0, 1,  // top
-	0, 1, 4, 5,  // front
-	4, 5, 7, 6,  // bottom
-	1, 2, 5, 6,  // right
-	2, 3, 6, 7,  // back
-	3, 0, 7, 4,  // left
-};
-
-constexpr u32 NUM_FACES = ArrayCount(g_CubeFaces) / 4;
-
-POLY_G4* g_Quad;
-
-SVECTOR g_CubeRotation = { 0, 0, 0 };
-VECTOR g_Scale = { ONE, ONE, ONE };
+POLY_F4* g_Quad;
 
 static MATRIX s_WorldMatrix;
 static MATRIX s_ViewMatrix;
 
 camera g_Camera;
-
-VECTOR g_Velocity = { 0, 0, 0 };
-VECTOR g_Acceleration = { 0, 0, 0 };
-VECTOR g_CubePosition = { 0, 0, 0 };
 
 void Setup()
 {
@@ -69,11 +39,51 @@ void Setup()
 	g_Camera.Position = { 500, -1'000, -1'500 };
 	g_Camera.LookAt = {};
 
+	g_Object.Position = {};
+	g_Object.Rotation = {};
+	g_Object.Scale = { ONE, ONE, ONE };
+
 	u32 FileSize;
 	u8* FileBytes = FileRead("\\MODEL.BIN;1", &FileSize);
-	printf("Read %u bytes from MODEL.BIN\n", FileSize);
+	u32 ByteIndex = 0;
 
-	//free(FileBytes);
+	g_Object.NumVerts = GetU16(FileBytes, &ByteIndex, ByteOrder_BigEndian);
+	g_Object.Vertices = (SVECTOR*)malloc3(g_Object.NumVerts * sizeof(SVECTOR));
+	for (u32 i = 0; i < g_Object.NumVerts; i++)
+	{
+		SVECTOR* Vertex = g_Object.Vertices + i;
+
+		Vertex->vx = GetU16(FileBytes, &ByteIndex, ByteOrder_BigEndian);
+		Vertex->vy = GetU16(FileBytes, &ByteIndex, ByteOrder_BigEndian);
+		Vertex->vz = GetU16(FileBytes, &ByteIndex, ByteOrder_BigEndian);
+
+		printf("Vertex %d: (%d, %d, %d)\n", i, Vertex->vx, Vertex->vy, Vertex->vz);
+	}
+
+	g_Object.NumFaces = GetU16(FileBytes, &ByteIndex, ByteOrder_BigEndian);
+	g_Object.Faces = (u16*)malloc3(g_Object.NumFaces * 4 * sizeof(u16));
+	for (u32 i = 0; i < g_Object.NumFaces * 4; i += 4)
+	{
+		g_Object.Faces[i] = GetU16(FileBytes, &ByteIndex, ByteOrder_BigEndian);
+		g_Object.Faces[i + 1] = GetU16(FileBytes, &ByteIndex, ByteOrder_BigEndian);
+		g_Object.Faces[i + 2] = GetU16(FileBytes, &ByteIndex, ByteOrder_BigEndian);
+		g_Object.Faces[i + 3] = GetU16(FileBytes, &ByteIndex, ByteOrder_BigEndian);
+		printf("Face %u: (%u, %u, %u)\n", i / 4, g_Object.Faces[i], g_Object.Faces[i + 1], g_Object.Faces[i + 2], g_Object.Faces[i + 3]);
+	}
+
+	g_Object.NumColours = (u16)FileBytes[ByteIndex++];
+	g_Object.Colours = (CVECTOR*)malloc3(g_Object.NumColours * sizeof(CVECTOR));
+	for (u32 i = 0; i < g_Object.NumColours; i++)
+	{
+		CVECTOR* Colour = g_Object.Colours + i;
+		Colour->r = FileBytes[ByteIndex++];
+		Colour->g = FileBytes[ByteIndex++];
+		Colour->b = FileBytes[ByteIndex++];
+
+		printf("Colour %u: (%u, %u, %u)\n", i, Colour->r, Colour->g, Colour->b);
+	}
+
+	free3(FileBytes);
 }
 
 void Update()
@@ -108,46 +118,33 @@ void Update()
 		g_Camera.Position.vz -= 50;
 	}
 
-	g_Velocity.vx += g_Acceleration.vx;
-	g_Velocity.vy += g_Acceleration.vy;
-	g_Velocity.vz += g_Acceleration.vz;
-
-	g_CubePosition.vx += g_Velocity.vx >> 1;
-	g_CubePosition.vy += g_Velocity.vy >> 1;
-	g_CubePosition.vz += g_Velocity.vz >> 1;
-
-	if (g_CubePosition.vy > 400)
-	{
-		g_Velocity.vy *= -1;
-	}
-
 	VECTOR GlobalUp = { 0, -ONE, 0 };
-	LookAt(&g_Camera, &g_Camera.Position, &g_CubePosition, &GlobalUp);
+	LookAt(&g_Camera, &g_Camera.Position, &g_Object.Position, &GlobalUp);
 
-	RotMatrix(&g_CubeRotation, &s_WorldMatrix); // populate matrix with rotation values
-	TransMatrix(&s_WorldMatrix, &g_CubePosition); // populate matrix with translation values
-	ScaleMatrix(&s_WorldMatrix, &g_Scale); // populate matrix with scale values
+	RotMatrix(&g_Object.Rotation, &s_WorldMatrix); // populate matrix with rotation values
+	TransMatrix(&s_WorldMatrix, &g_Object.Position); // populate matrix with translation values
+	ScaleMatrix(&s_WorldMatrix, &g_Object.Scale); // populate matrix with scale values
 
 	CompMatrixLV(&g_Camera.LookAt, &s_WorldMatrix, &s_ViewMatrix);
 
 	SetRotMatrix(&s_ViewMatrix); // sets rot/scale matrix to be used by the GTE (for upcoming RotTransPers call)
 	SetTransMatrix(&s_ViewMatrix); // sets translation matrix to be used by GTE
 
-	for (u32 i = 0; i < NUM_FACES * 4; i += 4)
+	for (u32 i = 0; i < g_Object.NumFaces * 4; i += 4)
 	{
-		g_Quad = (POLY_G4*)GetNextPrim();
-		setPolyG4(g_Quad);
-		setRGB0(g_Quad, 255,   0, 255);
-		setRGB1(g_Quad, 255, 255,   0);
-		setRGB2(g_Quad,   0, 255, 255);
-		setRGB3(g_Quad,   0, 255,   0);
+		u32 QuadIndex = i / 4;
+		g_Quad = (POLY_F4*)GetNextPrim();
+		setPolyF4(g_Quad);
+
+		CVECTOR* Colour = g_Object.Colours + QuadIndex;
+		setRGB0(g_Quad, Colour->r, Colour->g, Colour->b);
 
 		s32 OrderingTableZ, P, Flag, NormalClip;
 
 		// load first 3 verts (GTE can only compute max. 3 vectors at a time)
-		gte_ldv0(&g_CubeVertices[g_CubeFaces[i]]);
-		gte_ldv1(&g_CubeVertices[g_CubeFaces[i + 1]]);
-		gte_ldv2(&g_CubeVertices[g_CubeFaces[i + 2]]);
+		gte_ldv0(&g_Object.Vertices[g_Object.Faces[i]]);
+		gte_ldv1(&g_Object.Vertices[g_Object.Faces[i + 1]]);
+		gte_ldv2(&g_Object.Vertices[g_Object.Faces[i + 2]]);
 
 		// transform/project first 3 verts
 		gte_rtpt();
@@ -165,7 +162,7 @@ void Update()
 		gte_stsxy0(&g_Quad->x0);
 
 		// load the last vertex into the GTE
-		gte_ldv0(&g_CubeVertices[g_CubeFaces[i + 3]]);
+		gte_ldv0(&g_Object.Vertices[g_Object.Faces[i + 3]]);
 
 		// transform/project the last vertex
 		gte_rtps();
@@ -180,9 +177,10 @@ void Update()
 		if (OrderingTableZ > 0 && OrderingTableZ < OT_LENGTH)
 		{
 			addPrim(GetOtAt(GetCurrBuff(), OrderingTableZ), g_Quad);
-			IncrementNextPrimitive(sizeof(POLY_G4));
+			IncrementNextPrimitive(sizeof(POLY_F4));
 		}
 	}
+	g_Object.Rotation.vy += 20;
 }
 
 void Render()

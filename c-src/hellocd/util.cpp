@@ -31,3 +31,38 @@ u8* FileRead(char* FileName, u32* OutLength)
 	}
 	return Result;
 }
+
+u16 GetU16(u8* ByteBuffer, u32* OutByteIndex, byte_order ByteOrder)
+{
+	u16 Result = 0;
+	if (ByteOrder == ByteOrder_LittleEndian)
+	{
+		Result = *((u16*)(ByteBuffer + *OutByteIndex));
+		*OutByteIndex += 2;
+	}
+	else
+	{
+		Result |= ByteBuffer[(*OutByteIndex)++] << 8;
+		Result |= ByteBuffer[(*OutByteIndex)++];
+	}
+
+	return Result;
+}
+
+u32 GetU32(u8* ByteBuffer, u32* OutByteIndex, byte_order ByteOrder)
+{
+	u32 Result = 0;
+	if (ByteOrder == ByteOrder_LittleEndian)
+	{
+		Result = *((u32*)(ByteBuffer + *OutByteIndex));
+		*OutByteIndex += 4;
+	}
+	else
+	{
+		Result |= ByteBuffer[*OutByteIndex++] << 24;
+		Result |= ByteBuffer[*OutByteIndex++] << 16;
+		Result |= ByteBuffer[*OutByteIndex++] << 8;
+		Result |= ByteBuffer[*OutByteIndex++];
+	}
+	return Result;
+}
