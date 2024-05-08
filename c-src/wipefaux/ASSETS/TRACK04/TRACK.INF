@@ -1,0 +1,11 @@
+TRACK INFO::
+============
+dbName = /disk2/people/nicky/GIFTWRAPPED2
+sceneName = scene04-trk04fix3.1-0
+outName = trak04
+total vertex count = 2060
+total polygon count = 1668
+sizeof( Face ) = 20 bytes
+sizeof( Section ) = 156 bytes
+Last Command Line Used:::
+track10 /disk2/people/nicky/GIFTWRAPPED2/SCENES/scene04-trk04fix3.1-0.dsc trak04

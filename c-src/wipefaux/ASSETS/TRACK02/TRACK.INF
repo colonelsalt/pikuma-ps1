@@ -1,0 +1,11 @@
+TRACK INFO::
+============
+dbName = /disk2/people/nicky/converts3
+sceneName = venom-altimtrk4.1-0
+outName = trak02
+total vertex count = 3253
+total polygon count = 2644
+sizeof( Face ) = 20 bytes
+sizeof( Section ) = 156 bytes
+Last Command Line Used:::
+track10 /disk2/people/nicky/converts3/SCENES/venom-altimtrk4.1-0.dsc trak02

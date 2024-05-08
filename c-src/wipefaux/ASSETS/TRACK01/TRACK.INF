@@ -1,0 +1,11 @@
+TRACK INFO::
+============
+dbName = /disk2/people/laura/FINALSCENES
+sceneName = TRACK-trackredo.1-0
+outName = trak01
+total vertex count = 1710
+total polygon count = 1378
+sizeof( Face ) = 20 bytes
+sizeof( Section ) = 156 bytes
+Last Command Line Used:::
+track10 /disk2/people/laura/FINALSCENES/SCENES/TRACK-trackredo.1-0.dsc trak01

@@ -1,0 +1,11 @@
+TRACK INFO::
+============
+dbName = /disk2/people/laura/FINALRAPIER
+sceneName = trk11-trackwlightstst.4-0
+outName = trak11
+total vertex count = 2955
+total polygon count = 2418
+sizeof( Face ) = 20 bytes
+sizeof( Section ) = 156 bytes
+Last Command Line Used:::
+track10 /disk2/people/laura/FINALRAPIER/SCENES/trk11-trackwlightstst.4-0.dsc trak11

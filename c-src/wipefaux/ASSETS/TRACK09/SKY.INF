@@ -1,0 +1,9 @@
+SCENE INFO::
+============
+dbName = /disk2/wipeout/SOFT/TESTS2
+sceneName = icesky.12-0
+outName = sky09
+1 scene objects found
+1 textures found
+Last Command Line used ::
+scene9 /disk2/wipeout/SOFT/TESTS2/SCENES/icesky.12-0.dsc sky09

@@ -1,0 +1,11 @@
+TRACK INFO::
+============
+dbName = /disk2/people/nicky/converts3
+sceneName = venom-korodtrk5.1-0
+outName = trak12
+total vertex count = 3158
+total polygon count = 2529
+sizeof( Face ) = 20 bytes
+sizeof( Section ) = 156 bytes
+Last Command Line Used:::
+track10 /disk2/people/nicky/converts3/SCENES/venom-korodtrk5.1-0.dsc trak12

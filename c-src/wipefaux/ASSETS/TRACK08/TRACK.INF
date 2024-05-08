@@ -1,0 +1,11 @@
+TRACK INFO::
+============
+dbName = /disk2/people/laura/FINALVENOM
+sceneName = trk08-trackwlights2.1-0
+outName = trak08
+total vertex count = 2955
+total polygon count = 2418
+sizeof( Face ) = 20 bytes
+sizeof( Section ) = 156 bytes
+Last Command Line Used:::
+track10 /disk2/people/laura/FINALVENOM/SCENES/trk08-trackwlights2.1-0.dsc trak08

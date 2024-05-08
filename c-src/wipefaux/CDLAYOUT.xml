@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<iso_project image_name="GAME.ISO" cue_sheet="GAME.CUE" no_xa="0">
+
+    <track type="data">
+
+        <identifiers
+            system			= "PLAYSTATION"
+            application		= "PLAYSTATION"
+            volume			= "MYDISC"
+            volume_set		= "MYGAME"
+            publisher		= "ME"
+            data_preparer	= "MKPSXISO"
+            copyright		= "COPYLEFT"
+        />
+
+        <license file="LCNSFILE\LICENSEE.DAT"/>
+        
+        <directory_tree>
+            <file name="SYSTEM.CNF"	type="data"	source="SYSTEM.TXT"/>
+            <file name="MAIN.EXE"	type="data"	source="wipefaux.ps-exe"/>
+            <file name="ALLSH.PRM"  type="data" source="ASSETS\COMMON\ALLSH.PRM"/>
+            
+            <!-- <dir name="SUBDIR01">
+                <file name="FILE1.TXT" type="data" source="assets\FILE1.TXT"/>
+                <file name="FILE2.TXT" type="data" source="assets\FILE2.TXT"/>
+            </dir> -->
+            
+            <dummy sectors="1024"/>
+            
+        </directory_tree>
+        
+    </track>
+    
+</iso_project>

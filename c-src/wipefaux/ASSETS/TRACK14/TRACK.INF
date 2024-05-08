@@ -1,0 +1,11 @@
+TRACK INFO::
+============
+dbName = /disk2/people/louise/MARSY
+sceneName = bugga2.9-0
+outName = trak14
+total vertex count = 2528
+total polygon count = 1950
+sizeof( Face ) = 20 bytes
+sizeof( Section ) = 156 bytes
+Last Command Line Used:::
+track10 /disk2/people/louise/MARSY/SCENES/bugga2.9-0.dsc trak14
