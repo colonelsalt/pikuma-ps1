@@ -66,3 +66,13 @@ u32 GetU32(u8* ByteBuffer, u32* OutByteIndex, byte_order ByteOrder)
 	}
 	return Result;
 }
+
+CVECTOR GetCVector(u8* ByteBuffer, u32* OutByteIndex)
+{
+	CVECTOR Result;
+	Result.r = ByteBuffer[(*OutByteIndex)++];
+	Result.g = ByteBuffer[(*OutByteIndex)++];
+	Result.b = ByteBuffer[(*OutByteIndex)++];
+	Result.cd = ByteBuffer[(*OutByteIndex)++];
+	return Result;
+}

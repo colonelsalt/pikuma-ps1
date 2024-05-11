@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <libgte.h>
 
 typedef int8_t s8;
 typedef uint8_t u8;
@@ -32,3 +33,4 @@ u8* FileRead(char* FileName, u32* OutLength);
 
 u16 GetU16(u8* ByteBuffer, u32* OutByteIndex, byte_order ByteOrder);
 u32 GetU32(u8* ByteBuffer, u32* OutByteIndex, byte_order ByteOrder);
+CVECTOR GetCVector(u8* ByteBuffer, u32* OutByteIndex);
